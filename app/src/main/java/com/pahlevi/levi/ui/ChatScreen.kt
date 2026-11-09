@@ -67,6 +67,8 @@ import com.pahlevi.levi.audio.Dictation
 import com.pahlevi.levi.data.ChatSession
 import com.pahlevi.levi.data.NoteKind
 import com.pahlevi.levi.data.NotesRepo
+import com.pahlevi.levi.data.SiteRatingRepo
+import com.pahlevi.levi.ai.Channel
 import com.pahlevi.levi.data.Source
 import com.pahlevi.levi.data.StoredMessage
 import com.pahlevi.levi.llm.ChatMessage
@@ -165,11 +167,26 @@ class ChatState(id: String?, prefill: String) {
     var memorySuggestion by mutableStateOf<String?>(null)
     var running by mutableStateOf(false)
         private set
+    /** sumber web yang baru dipakai: tanyakan kepercayaannya ke pengguna */
+    var trustCheck by mutableStateOf<Pair<String, List<Source>>?>(null)
+    /** tawaran menyimpan jawaban dari sumber tepercaya sebagai pengetahuan */
+    var knowledgeOffer by mutableStateOf<Pair<String, List<Source>>?>(null)
+    var navigateTo by mutableStateOf<Screen?>(null)
     private var job: Job? = null
 
     fun send(scope: CoroutineScope, gate: InternetGate) {
         val text = input.trim()
         if (text.isEmpty() || running) return
+        actionFor(text)?.let { (screen, reply) ->
+            input = ""
+            session = session.copy(
+                title = if (session.messages.isEmpty()) NotesRepo.autoTitle(text) else session.title,
+                messages = session.messages + StoredMessage(ChatMessage.USER, text) + StoredMessage(ChatMessage.ASSISTANT, reply),
+            )
+            AppGraph.chats.save(session)
+            navigateTo = screen
+            return
+        }
         if (useWeb) {
             gate.request("Levi akan mencari di internet: \"${text.take(80)}\"") { start(scope, text, web = true) }
         } else {
@@ -195,10 +212,11 @@ class ChatState(id: String?, prefill: String) {
             try {
                 val prefs = AppGraph.prefs
                 val memories = if (prefs.useMemory) AppGraph.memory.items.value else emptyList()
-                val msgs = mutableListOf(ChatMessage(ChatMessage.SYSTEM, Prompts.chatSystem(prefs.userName, memories)))
+                val knowledge = if (web) emptyList() else AppGraph.knowledge.relevant(text)
+                val msgs = mutableListOf(ChatMessage(ChatMessage.SYSTEM, Prompts.chatSystem(prefs.userName, memories, knowledge)))
                 val history = session.messages.map { ChatMessage(it.role, it.text) }
                 if (web) {
-                    val pages = WebSearch.searchAndRead(text) { status = it }
+                    val pages = WebSearch.searchAndRead(text, rating = { AppGraph.sites.rating(it) }) { status = it }
                     if (pages.isEmpty()) {
                         msgs += history.dropLast(1)
                         msgs += ChatMessage(ChatMessage.USER, "$text\n\n(Catatan: pencarian internet tidak menemukan hasil. Beri tahu pengguna, lalu jawab sebisanya dan sebutkan bahwa itu tanpa sumber.)")
@@ -225,6 +243,7 @@ class ChatState(id: String?, prefill: String) {
                 if (answer.isNotEmpty()) {
                     session = session.copy(messages = session.messages + StoredMessage(ChatMessage.ASSISTANT, answer, sources))
                     AppGraph.chats.save(session)
+                    if (sources.isNotEmpty() && error == null) trustCheck = answer to sources
                 }
                 streaming = null
                 status = null
@@ -236,7 +255,41 @@ class ChatState(id: String?, prefill: String) {
 
     fun stop() = AppGraph.llm.stop()
 
+    /** Dipanggil setelah pengguna selesai menilai situs: tawarkan simpan kalau ada sumber tepercaya. */
+    fun afterTrust() {
+        val (answer, sources) = trustCheck ?: return
+        trustCheck = null
+        val trusted = sources.filter { AppGraph.sites.rating(SiteRatingRepo.normalize(it.url)) == true }
+        if (trusted.isNotEmpty()) knowledgeOffer = answer to trusted
+    }
+
     companion object {
+        private val sendRegex = Regex(
+            "^(?:tolong\\s+)?(?:kirim|kirimkan|kirimin|kirimi)\\s+(?:pesan\\s+)?(wa|whatsapp|sms|email|e-mail|surel|pesan)\\b",
+            RegexOption.IGNORE_CASE,
+        )
+        private val emailRegex = Regex(
+            "(ringkas|rangkum|baca|bacakan|cek|periksa)\\b.{0,30}\\b(email|e-mail|surel|gmail|inbox|kotak masuk)",
+            RegexOption.IGNORE_CASE,
+        )
+
+        /** Permintaan yang ditangani menu khusus (kirim pesan / email), bukan dijawab chat biasa. */
+        fun actionFor(text: String): Pair<Screen, String>? {
+            sendRegex.find(text)?.let { m ->
+                val channel = when (m.groupValues[1].lowercase()) {
+                    "sms" -> Channel.SMS
+                    "email", "e-mail", "surel" -> Channel.EMAIL
+                    else -> Channel.WHATSAPP
+                }
+                return Screen.SendMessage(channel = channel, brief = text, autoDraft = true) to
+                    "Baik, saya siapkan pesannya di menu Kirim Pesan. Kamu akan lihat tujuan dan isinya dulu — tidak ada yang terkirim tanpa izinmu."
+            }
+            if (emailRegex.containsMatchIn(text)) {
+                return Screen.Email(autoSummarize = true) to "Baik, saya buka Email dan ringkas yang belum dibaca."
+            }
+            return null
+        }
+
         private val memoryRegex = Regex("^(?:tolong\\s+)?ingat(?:lah|kan)?(?:\\s+(?:ya|bahwa|kalau))?\\s*[:,]?\\s+(.{3,})", RegexOption.IGNORE_CASE)
         fun memoryRequest(text: String): String? = memoryRegex.find(text.trim())?.groupValues?.get(1)?.trim()
     }
@@ -358,6 +411,20 @@ fun ChatScreen(entry: Entry, screen: Screen.Chat) {
                 }
             }
         }
+    }
+
+    LaunchedEffect(st.navigateTo) {
+        st.navigateTo?.let {
+            st.navigateTo = null
+            nav.go(it)
+        }
+    }
+
+    st.trustCheck?.let { (_, sources) ->
+        TrustSitesDialog(sources.map { SiteRatingRepo.normalize(it.url) }.distinct(), onDone = { st.afterTrust() })
+    }
+    st.knowledgeOffer?.let { (answer, sources) ->
+        SaveKnowledgeDialog(answer, sources, onDone = { st.knowledgeOffer = null })
     }
 
     menuFor?.let { m ->

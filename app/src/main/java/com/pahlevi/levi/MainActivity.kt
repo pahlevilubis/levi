@@ -34,6 +34,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.pahlevi.levi.ui.ChatListScreen
 import com.pahlevi.levi.ui.ChatScreen
 import com.pahlevi.levi.ui.DocumentScreen
+import com.pahlevi.levi.ui.EmailScreen
+import com.pahlevi.levi.ui.KnowledgeScreen
+import com.pahlevi.levi.ui.SendMessageScreen
 import com.pahlevi.levi.ui.HomeScreen
 import com.pahlevi.levi.ui.InternetGate
 import com.pahlevi.levi.ui.InternetGateDialogs
@@ -131,6 +134,9 @@ fun LeviRoot(nav: NavViewModel) {
                         Screen.Settings -> SettingsScreen()
                         is Screen.Models -> ModelsScreen(s)
                         is Screen.SharedText -> SharedTextScreen(s)
+                        is Screen.Email -> EmailScreen(entry, s)
+                        is Screen.SendMessage -> SendMessageScreen(entry, s)
+                        Screen.Knowledge -> KnowledgeScreen()
                     }
                 }
             }

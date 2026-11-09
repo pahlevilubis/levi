@@ -97,4 +97,8 @@ dependencies {
 
     // Membaca halaman web untuk fitur Cari Web
     implementation("org.jsoup:jsoup:1.18.3")
+
+    // Membaca & mengirim email Gmail (IMAP/SMTP)
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 }

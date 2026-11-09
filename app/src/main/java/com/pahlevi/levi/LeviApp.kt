@@ -7,6 +7,10 @@ import com.pahlevi.levi.ai.LlmManager
 import com.pahlevi.levi.ai.ModelDownloader
 import com.pahlevi.levi.ai.WhisperManager
 import com.pahlevi.levi.data.ChatRepo
+import com.pahlevi.levi.data.KnowledgeRepo
+import com.pahlevi.levi.data.MailAccountStore
+import com.pahlevi.levi.data.SecureStore
+import com.pahlevi.levi.data.SiteRatingRepo
 import com.pahlevi.levi.data.MemoryRepo
 import com.pahlevi.levi.data.NotesRepo
 import com.pahlevi.levi.data.Prefs
@@ -34,6 +38,12 @@ object AppGraph {
         private set
     lateinit var whisper: WhisperManager
         private set
+    lateinit var knowledge: KnowledgeRepo
+        private set
+    lateinit var sites: SiteRatingRepo
+        private set
+    lateinit var mailAccount: MailAccountStore
+        private set
 
     fun init(application: Application) {
         app = application
@@ -44,6 +54,9 @@ object AppGraph {
         downloads = ModelDownloader(application, prefs, scope)
         llm = LlmManager(prefs, scope)
         whisper = WhisperManager(prefs)
+        knowledge = KnowledgeRepo(application, scope)
+        sites = SiteRatingRepo(application, scope)
+        mailAccount = MailAccountStore(application, SecureStore(application))
     }
 }
 

@@ -5,6 +5,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import com.pahlevi.levi.data.SiteRatingRepo
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import java.net.URLDecoder
@@ -75,10 +76,21 @@ object WebSearch {
         text.ifBlank { main?.text().orEmpty() }.take(maxChars)
     }
 
-    /** Cari lalu baca beberapa halaman teratas. */
-    suspend fun searchAndRead(query: String, pages: Int = 3, charsPerPage: Int = 1800, onStatus: (String) -> Unit): List<WebPage> {
+    /**
+     * Cari lalu baca beberapa halaman teratas. Situs yang tidak dipercaya ([rating] = false) dibuang,
+     * situs tepercaya ([rating] = true) didahulukan.
+     */
+    suspend fun searchAndRead(
+        query: String,
+        pages: Int = 3,
+        charsPerPage: Int = 1800,
+        rating: (String) -> Boolean? = { null },
+        onStatus: (String) -> Unit,
+    ): List<WebPage> {
         onStatus("Mencari di internet…")
-        val results = search(query)
+        val results = search(query, max = 8)
+            .filter { rating(SiteRatingRepo.normalize(it.url)) != false }
+            .sortedByDescending { if (rating(SiteRatingRepo.normalize(it.url)) == true) 1 else 0 }
         if (results.isEmpty()) return emptyList()
         onStatus("Membaca ${minOf(pages, results.size)} halaman…")
         return coroutineScope {

@@ -29,22 +29,26 @@ jobs:
 
       # llama.cpp + whisper.cpp + hasil compile native disimpan di cache supaya build berikutnya cepat
       - name: Pulihkan cache native
-        id: native-cache
         uses: actions/cache/restore@v4
         with:
           path: |
             third_party
             llm/.cxx
             whisper/.cxx
-          key: native-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}
+          key: native-v2-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}-${{ github.run_id }}
+          restore-keys: |
+            native-v2-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}-
 
       - name: Ambil llama.cpp dan whisper.cpp
-        if: steps.native-cache.outputs.cache-hit != 'true'
         run: |
-          rm -rf third_party && mkdir -p third_party
-          git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp third_party/llama.cpp
-          git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp third_party/whisper.cpp
-          rm -rf third_party/llama.cpp/.git third_party/whisper.cpp/.git
+          if [ ! -f third_party/llama.cpp/CMakeLists.txt ] || [ ! -f third_party/whisper.cpp/CMakeLists.txt ]; then
+            rm -rf third_party && mkdir -p third_party
+            git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp third_party/llama.cpp
+            git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp third_party/whisper.cpp
+            rm -rf third_party/llama.cpp/.git third_party/whisper.cpp/.git
+          else
+            echo "Sumber native diambil dari cache"
+          fi
 
       - name: Pasang Android NDK & CMake
         run: |
@@ -58,7 +62,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk Levi.apk
 
       - name: Simpan cache native
-        if: always() && steps.native-cache.outputs.cache-hit != 'true'
+        if: always()
         continue-on-error: true
         uses: actions/cache/save@v4
         with:
@@ -66,7 +70,7 @@ jobs:
             third_party
             llm/.cxx
             whisper/.cxx
-          key: native-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}
+          key: native-v2-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}-${{ github.run_id }}
 
       - name: Ringkasan error (kalau gagal)
         if: failure()

@@ -8,6 +8,10 @@
     <!-- Mikrofon: untuk dikte dan merekam (Android akan minta izin dulu) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- SMS: hanya dikirim setelah kamu melihat isinya dan menekan "Ya, kirim" -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
     <!-- Notifikasi & kerja di latar belakang (rekam rapat, transkrip panjang) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -19,6 +23,17 @@
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <!-- WhatsApp & aplikasi email untuk fitur Kirim Pesan -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 

@@ -19,7 +19,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.EditNote
@@ -54,7 +57,9 @@ private val tools = listOf(
     Tool("Dokumen", "Foto / PDF jadi teks", Icons.Filled.DocumentScanner, Screen.Document),
     Tool("Ringkas", "Teks panjang jadi inti", Icons.Filled.Summarize, Screen.Summarize()),
     Tool("Bantu Tulis", "Surat, email, pesan", Icons.Filled.EditNote, Screen.Write),
-    Tool("Catatan", "Semua hasil tersimpan", Icons.Filled.Description, Screen.Notes),
+    Tool("Email", "Baca & ringkas Gmail", Icons.Filled.Email, Screen.Email()),
+    Tool("Kirim Pesan", "WA, SMS, email — pakai izin", Icons.AutoMirrored.Filled.Send, Screen.SendMessage()),
+    Tool("Pengetahuan", "Belajar dari web tepercaya", Icons.Filled.School, Screen.Knowledge),
     Tool("Memori", "Hal yang Levi ingat", Icons.Filled.Psychology, Screen.Memory),
 )
 

@@ -174,9 +174,14 @@ fun SettingsScreen() {
                 Switch(checked = useMem, onCheckedChange = { useMem = it; prefs.useMemory = it })
             }
             LinkRow("Kelola memori", "Lihat, ubah, atau hapus hal yang diingat Levi") { nav.go(Screen.Memory) }
+            LinkRow("Pengetahuan & situs tepercaya", "Yang Levi pelajari dari web, dan situs yang kamu percayai") { nav.go(Screen.Knowledge) }
+            LinkRow(
+                "Gmail",
+                AppGraph.mailAccount.email?.let { "Terhubung: $it" } ?: "Belum dihubungkan — Levi bisa membaca & meringkas email",
+            ) { nav.go(Screen.Email()) }
             LinkRow("Hapus semua riwayat chat", "Catatan dan memori tidak ikut terhapus") { confirmClearChats = true }
             Text(
-                "Levi tidak bisa mengubah pengaturan HP, mengirim pesan, atau membuka aplikasi lain. " +
+                "Levi tidak bisa mengubah pengaturan HP. Pesan (WA/SMS/email) hanya dikirim setelah kamu melihat isinya dan menekan \"Ya, kirim\". " +
                     "Mikrofon dan internet hanya dipakai setelah kamu izinkan.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

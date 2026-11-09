@@ -3,6 +3,7 @@ package com.pahlevi.levi.ui
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
+import com.pahlevi.levi.ai.Channel
 import com.pahlevi.levi.ai.ModelType
 import com.pahlevi.levi.ai.Prompts
 import com.pahlevi.levi.data.newId
@@ -26,6 +27,18 @@ sealed interface Screen {
     data object Settings : Screen
     data class Models(val type: ModelType) : Screen
     data class SharedText(val text: String) : Screen
+    data class Email(val autoSummarize: Boolean = false) : Screen
+    data class SendMessage(
+        val channel: Channel? = null,
+        val to: String = "",
+        val toName: String = "",
+        val subject: String = "",
+        val body: String = "",
+        val brief: String = "",
+        val inReplyTo: String? = null,
+        val autoDraft: Boolean = false,
+    ) : Screen
+    data object Knowledge : Screen
 }
 
 /** Satu halaman di tumpukan navigasi, dengan penyimpanan state & coroutine miliknya sendiri. */

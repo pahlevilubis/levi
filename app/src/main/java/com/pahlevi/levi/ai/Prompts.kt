@@ -1,6 +1,8 @@
 package com.pahlevi.levi.ai
 
+import com.pahlevi.levi.data.KnowledgeItem
 import com.pahlevi.levi.data.MemoryItem
+import com.pahlevi.levi.data.SiteRatingRepo
 import com.pahlevi.levi.llm.ChatMessage
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -11,17 +13,26 @@ object Prompts {
     private fun today(): String =
         SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID")).format(Date())
 
-    fun chatSystem(userName: String, memories: List<MemoryItem>): String = buildString {
+    fun chatSystem(userName: String, memories: List<MemoryItem>, knowledge: List<KnowledgeItem> = emptyList()): String = buildString {
         append("Kamu adalah Levi, asisten AI yang berjalan offline di HP")
         if (userName.isNotBlank()) append(" milik $userName")
         append(". Hari ini $today. ")
         append("Jawab dalam bahasa Indonesia yang jelas, ramah, dan ringkas, kecuali pengguna memakai atau meminta bahasa lain. ")
         append("Kalau kamu tidak yakin atau tidak tahu, katakan terus terang — jangan mengarang fakta, angka, nama, atau tautan. ")
-        append("Kamu tidak bisa membuka internet sendiri dan tidak bisa mengubah apa pun di HP.")
+        append("Kamu tidak bisa membuka internet sendiri dan tidak bisa mengubah apa pun di HP. ")
+        append("Kamu tidak bisa mengirim pesan sendiri; kalau pengguna mau mengirim pesan, sarankan memakai menu Kirim Pesan (selalu dengan izinnya).")
         if (memories.isNotEmpty()) {
             append("\n\nHal yang pengguna minta kamu ingat tentang dirinya:\n")
             memories.forEach { append("- ").append(it.text).append('\n') }
             append("Gunakan informasi ini hanya kalau relevan dengan pertanyaannya.")
+        }
+        if (knowledge.isNotEmpty()) {
+            append("\n\nPengetahuan yang sudah kamu pelajari dari situs yang dipercaya pengguna (pakai kalau relevan, sebutkan sumbernya):\n")
+            knowledge.forEach { k ->
+                append("- ").append(k.text.take(800))
+                if (k.sources.isNotEmpty()) append(" (sumber: ").append(k.sources.joinToString(", ") { SiteRatingRepo.normalize(it.url) }).append(")")
+                append('\n')
+            }
         }
     }
 
@@ -95,6 +106,37 @@ object Prompts {
 
     const val TIDY_SYSTEM = "Kamu merapikan teks hasil pengenalan suara: perbaiki tanda baca, huruf besar, dan salah ketik yang jelas, " +
         "pisahkan menjadi paragraf. Jangan mengubah makna atau menambah isi. Tulis hanya teks hasilnya."
+
+    // ---- Pesan ----
+
+    const val MESSAGE_SYSTEM = "Kamu menulis pesan singkat atas nama pengguna, dalam bahasa Indonesia yang sopan dan wajar. " +
+        "Tulis HANYA isi pesannya (tanpa judul, tanpa penjelasan, tanpa tanda kutip). Jangan mengarang fakta yang tidak disebut."
+
+    fun messageUser(brief: String, channel: String, toName: String) = buildString {
+        append("Buat isi pesan ").append(channel)
+        if (toName.isNotBlank()) append(" untuk ").append(toName)
+        append(" berdasarkan permintaan ini:\n").append(brief.trim())
+    }
+
+    // ---- Email ----
+
+    const val EMAIL_DIGEST_SYSTEM = "Kamu membantu pengguna yang malas membaca email. Untuk setiap email, tulis satu poin: " +
+        "pengirim, inti isinya dalam satu kalimat, dan apakah perlu tindakan (apa dan kapan). " +
+        "Dahulukan yang penting/mendesak. Email promosi/iklan cukup dikumpulkan di akhir sebagai satu baris 'Promo: ...'. " +
+        "Jangan mengarang isi yang tidak ada."
+
+    const val EMAIL_ONE_SYSTEM = "Ringkas email ini dalam bahasa Indonesia: inti pesan, hal penting (tanggal, jumlah, tautan), " +
+        "dan tindakan yang perlu dilakukan pengguna kalau ada. Singkat, pakai poin."
+
+    fun emailListText(mails: List<MailItem>): String = buildString {
+        val fmt = SimpleDateFormat("d MMM HH:mm", Locale("id", "ID"))
+        mails.forEachIndexed { i, m ->
+            append("Email ${i + 1}\nDari: ").append(m.from).append(" <").append(m.fromAddress).append(">\n")
+            m.date?.let { append("Tanggal: ").append(fmt.format(it)).append('\n') }
+            append("Subjek: ").append(m.subject).append('\n')
+            append(m.body.take(if (mails.size == 1) 6000 else 700)).append("\n\n")
+        }
+    }
 
     fun chat(system: String, user: String) = listOf(
         ChatMessage(ChatMessage.SYSTEM, system),
