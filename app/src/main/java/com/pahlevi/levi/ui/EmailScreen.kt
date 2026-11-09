@@ -242,8 +242,9 @@ fun EmailScreen(entry: Entry, screen: Screen.Email) {
                             to = selected.fromAddress,
                             toName = selected.from,
                             subject = if (selected.subject.startsWith("Re:", true)) selected.subject else "Re: ${selected.subject}",
-                            brief = "Balas email dari ${selected.from} tentang \"${selected.subject}\": ",
+                            brief = "Balas email ini. Isi balasan saya: ",
                             inReplyTo = selected.messageId,
+                            replyContext = "Dari: ${selected.from}\nSubjek: ${selected.subject}\n\n${selected.body}",
                         )
                     )
                 })

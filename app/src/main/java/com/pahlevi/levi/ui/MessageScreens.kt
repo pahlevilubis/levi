@@ -84,6 +84,7 @@ class SendMessageState(screen: Screen.SendMessage) {
     var confirm by mutableStateOf<OutgoingMessage?>(null)
     var sentInfo by mutableStateOf<String?>(null)
     val inReplyTo: String? = screen.inReplyTo
+    val replyContext: String = screen.replyContext
     var autoDraftDone = false
     private var job: Job? = null
     val running get() = job?.isActive == true
@@ -95,7 +96,7 @@ class SendMessageState(screen: Screen.SendMessage) {
             status = "Levi menulis pesan…"
             try {
                 body = AppGraph.llm.complete(
-                    Prompts.chat(Prompts.MESSAGE_SYSTEM, Prompts.messageUser(brief, channel.label, toName)),
+                    Prompts.chat(Prompts.MESSAGE_SYSTEM, Prompts.messageUser(brief, channel.label, toName, replyContext)),
                     AppGraph.llm.defaultParams(maxTokens = 500, temperature = 0.5f),
                 ) { status = null; body = it }
                 if (channel == Channel.EMAIL && subject.isBlank()) {

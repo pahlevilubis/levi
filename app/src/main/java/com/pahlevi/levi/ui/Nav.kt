@@ -37,6 +37,8 @@ sealed interface Screen {
         val brief: String = "",
         val inReplyTo: String? = null,
         val autoDraft: Boolean = false,
+        /** isi pesan yang dibalas (tidak ditampilkan, hanya untuk AI) */
+        val replyContext: String = "",
     ) : Screen
     data object Knowledge : Screen
 }

@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.pahlevi.levi"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         applicationId = "com.pahlevi.levi"
@@ -60,6 +61,16 @@ android {
         jniLibs {
             // model AI dibaca langsung dari file; library native tidak perlu diekstrak
             useLegacyPackaging = false
+        }
+        resources {
+            // file lisensi ganda dari library email
+            excludes += listOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/NOTICE",
+                "META-INF/LICENSE",
+                "META-INF/DEPENDENCIES",
+            )
         }
     }
 

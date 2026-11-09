@@ -112,7 +112,10 @@ object Prompts {
     const val MESSAGE_SYSTEM = "Kamu menulis pesan singkat atas nama pengguna, dalam bahasa Indonesia yang sopan dan wajar. " +
         "Tulis HANYA isi pesannya (tanpa judul, tanpa penjelasan, tanpa tanda kutip). Jangan mengarang fakta yang tidak disebut."
 
-    fun messageUser(brief: String, channel: String, toName: String) = buildString {
+    fun messageUser(brief: String, channel: String, toName: String, replyContext: String = "") = buildString {
+        if (replyContext.isNotBlank()) {
+            append("Pesan yang akan dibalas:\n\"\"\"\n").append(replyContext.take(3000).trim()).append("\n\"\"\"\n\n")
+        }
         append("Buat isi pesan ").append(channel)
         if (toName.isNotBlank()) append(" untuk ").append(toName)
         append(" berdasarkan permintaan ini:\n").append(brief.trim())

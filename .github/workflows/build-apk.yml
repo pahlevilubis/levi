@@ -90,6 +90,6 @@ jobs:
         with:
           tag_name: build-${{ github.run_number }}
           name: Levi build ${{ github.run_number }}
-          body: APK Levi siap pasang. Download Levi.apk di bawah ini.
+          body: APK Levi siap pasang. Download Levi.apk di bawah ini dari HP.
           files: Levi.apk
           make_latest: true
