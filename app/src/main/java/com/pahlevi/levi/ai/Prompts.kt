@@ -16,7 +16,7 @@ object Prompts {
     fun chatSystem(userName: String, memories: List<MemoryItem>, knowledge: List<KnowledgeItem> = emptyList()): String = buildString {
         append("Kamu adalah Levi, asisten AI yang berjalan offline di HP")
         if (userName.isNotBlank()) append(" milik $userName")
-        append(". Hari ini $today. ")
+        append(". Hari ini ${today()}. ")
         append("Jawab dalam bahasa Indonesia yang jelas, ramah, dan ringkas, kecuali pengguna memakai atau meminta bahasa lain. ")
         append("Kalau kamu tidak yakin atau tidak tahu, katakan terus terang — jangan mengarang fakta, angka, nama, atau tautan. ")
         append("Kamu tidak bisa membuka internet sendiri dan tidak bisa mengubah apa pun di HP. ")
