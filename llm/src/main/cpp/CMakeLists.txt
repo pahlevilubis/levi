@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(levi_llm C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Sumber llama.cpp diambil oleh workflow GitHub ke folder third_party/
+set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../../third_party/llama.cpp)
+if(NOT EXISTS ${LLAMA_SRC}/CMakeLists.txt)
+    message(FATAL_ERROR "llama.cpp tidak ditemukan di ${LLAMA_SRC}")
+endif()
+
+# Build statis & ramping: hanya library inti + common (untuk chat template)
+set(BUILD_SHARED_LIBS   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_COMMON  ON  CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TESTS   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TOOLS   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER  OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_APP     OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_MTMD    OFF CACHE BOOL "" FORCE)
+set(LLAMA_OPENSSL       OFF CACHE BOOL "" FORCE)
+set(LLAMA_SUBPROCESS    OFF CACHE BOOL "" FORCE)
+set(LLAMA_ALL_WARNINGS  OFF CACHE BOOL "" FORCE)
+set(GGML_NATIVE         OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP         OFF CACHE BOOL "" FORCE)
+set(GGML_BACKEND_DL     OFF CACHE BOOL "" FORCE)
+
+if(ANDROID)
+    # Snapdragon 888 / Exynos 2100 (Galaxy S21) dan HP sekelasnya: ARMv8.2 + dotprod + fp16
+    set(GGML_CPU_ARM_ARCH "armv8.2-a+dotprod+fp16" CACHE STRING "" FORCE)
+endif()
+
+add_subdirectory(${LLAMA_SRC} llama-build)
+
+add_library(levi_llm SHARED levi_llm.cpp)
+
+target_include_directories(levi_llm PRIVATE
+        ${LLAMA_SRC}/include
+        ${LLAMA_SRC}/common
+        ${LLAMA_SRC}/ggml/include)
+
+if(ANDROID)
+    target_link_libraries(levi_llm PRIVATE llama-common llama android log)
+else()
+    # build uji di komputer biasa (bukan HP)
+    find_package(JNI REQUIRED)
+    target_include_directories(levi_llm PRIVATE ${JNI_INCLUDE_DIRS})
+    target_link_libraries(levi_llm PRIVATE llama-common llama)
+endif()
+
+# Sembunyikan simbol ggml supaya tidak bentrok dengan library whisper
+target_link_options(levi_llm PRIVATE "-Wl,--exclude-libs,ALL")

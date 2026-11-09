@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ikon Levi: huruf L dengan bintang AI kecil -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- huruf L -->
+    <path
+        android:pathData="M42,32 L42,74 L68,74"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeColor="#FF5FD4B8" />
+    <!-- bintang AI -->
+    <path
+        android:fillColor="#FFFFD166"
+        android:pathData="M66,30 L68.8,38.2 L77,41 L68.8,43.8 L66,52 L63.2,43.8 L55,41 L63.2,38.2 Z" />
+</vector>

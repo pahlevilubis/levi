@@ -1,0 +1,3 @@
+-keep class com.pahlevi.levi.llm.LlamaNative { *; }
+-keep interface com.pahlevi.levi.llm.TokenCallback { *; }
+-keepclassmembers class * implements com.pahlevi.levi.llm.TokenCallback { *; }

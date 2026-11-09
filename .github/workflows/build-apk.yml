@@ -1,0 +1,91 @@
+name: Build APK Levi
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  LLAMA_TAG: b12211
+  WHISPER_TAG: v1.9.5
+  NDK_VERSION: 27.2.12479018
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ambil source code
+        uses: actions/checkout@v4
+
+      - name: Siapkan Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      # llama.cpp + whisper.cpp + hasil compile native disimpan di cache supaya build berikutnya cepat
+      - name: Pulihkan cache native
+        id: native-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            third_party
+            llm/.cxx
+            whisper/.cxx
+          key: native-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}
+
+      - name: Ambil llama.cpp dan whisper.cpp
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: |
+          rm -rf third_party && mkdir -p third_party
+          git clone --depth 1 --branch "$LLAMA_TAG" https://github.com/ggml-org/llama.cpp third_party/llama.cpp
+          git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp third_party/whisper.cpp
+          rm -rf third_party/llama.cpp/.git third_party/whisper.cpp/.git
+
+      - name: Pasang Android NDK & CMake
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${NDK_VERSION}" "cmake;3.22.1" > /dev/null
+
+      - name: Build APK
+        run: |
+          chmod +x ./gradlew
+          set -o pipefail
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee build-log.txt
+          cp app/build/outputs/apk/release/app-release.apk Levi.apk
+
+      - name: Simpan cache native
+        if: always() && steps.native-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            third_party
+            llm/.cxx
+            whisper/.cxx
+          key: native-${{ env.LLAMA_TAG }}-${{ env.WHISPER_TAG }}-${{ hashFiles('llm/src/main/cpp/CMakeLists.txt', 'whisper/src/main/cpp/CMakeLists.txt', 'llm/build.gradle.kts', 'whisper/build.gradle.kts') }}
+
+      - name: Ringkasan error (kalau gagal)
+        if: failure()
+        run: |
+          grep -E "^e: |error:|FAILURE|What went wrong" -A3 build-log.txt | head -150 || true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Levi-APK
+          path: Levi.apk
+          if-no-files-found: error
+
+      # APK juga diterbitkan di halaman Releases supaya bisa di-download langsung dari HP
+      - name: Terbitkan di Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Levi build ${{ github.run_number }}
+          body: APK Levi siap pasang. Download Levi.apk di bawah ini.
+          files: Levi.apk
+          make_latest: true

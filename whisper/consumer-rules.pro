@@ -1,0 +1,3 @@
+-keep class com.pahlevi.levi.whisper.WhisperNative { *; }
+-keep interface com.pahlevi.levi.whisper.WhisperCallback { *; }
+-keepclassmembers class * implements com.pahlevi.levi.whisper.WhisperCallback { *; }
