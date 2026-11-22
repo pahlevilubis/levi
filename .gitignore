@@ -9,3 +9,9 @@ local.properties
 .DS_Store
 captures/
 third_party/
+
+# Kunci dan rahasia: jangan pernah di-commit
+*.keystore
+*.jks
+key.properties
+.env

@@ -20,13 +20,17 @@ android {
         }
     }
 
-    // Kunci tanda tangan tetap, supaya update APK bisa langsung ditimpa tanpa uninstall
+    // Kunci tanda tangan diambil dari GitHub Secrets (KEYSTORE_BASE64 dan KEYSTORE_PASSWORD).
+    // Workflow menaruh file kuncinya di KEYSTORE_FILE saat build; file kunci tidak disimpan di repo.
+    val releaseKeystore = System.getenv("KEYSTORE_FILE")
     signingConfigs {
-        create("levi") {
-            storeFile = file("levi.keystore")
-            storePassword = "levi1234"
-            keyAlias = "levi"
-            keyPassword = "levi1234"
+        if (releaseKeystore != null) {
+            create("levi") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = "levi"
+                keyPassword = System.getenv("KEYSTORE_PASSWORD")
+            }
         }
     }
 
@@ -38,10 +42,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("levi")
+            signingConfig = if (releaseKeystore != null) signingConfigs.getByName("levi") else signingConfigs.getByName("debug")
         }
         debug {
-            signingConfig = signingConfigs.getByName("levi")
+            if (releaseKeystore != null) signingConfig = signingConfigs.getByName("levi")
         }
     }
 
